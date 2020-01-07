@@ -1,6 +1,6 @@
 # Team 7 - Project 5 - KRACK
 
-## 研究過程
+## 背景介紹
 
 KRACK（Key Reinstallation AttaCKs）：金鑰重新安裝攻擊
 - 是一種針對保護 Wi-Fi 連接的 WPA 協定的攻擊手段
@@ -43,7 +43,6 @@ KRACK 並非直接解開 WPA2 加密強制通訊，而是透過基地臺重送�
 在 KRACKs 攻擊過程透過網路封包分析軟體 WireShark，並偽造與真實 AP 相同 SSID 無線網路名稱與 MAC Address 的熱點，在終端裝置要與真實 AP 完成認證的時候，透過中間人攻擊與 KRACKs 的攻擊方法，迫使終端設備主動連接偽冒的 SSID ，竊取終端裝置連至交友網站時，輸入的帳號與密碼。
 
 [Mathy Vanhoef 驗證 KRACK 過程](https://www.youtube.com/watch?v=Oh4WURZoR98)
-
 
 ## HTS模擬題目
 
