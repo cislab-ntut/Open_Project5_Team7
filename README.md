@@ -164,9 +164,19 @@ document.body.appendChild(img);
 &nbsp;&nbsp;&nbsp;&nbsp;和前两个的区别在于，DOM XSS代码并不需要服务器解析响应的直接参与，触发XSS靠的就是浏览器端的DOM解析，可以认为完全是客户端的事情。
 
 ## 防範撈取握手封包並使用密碼字典攻擊
-> 目前大部分的WIFI加密主流仍然是WPA2-PSK，儘管過去兩年各大廠商已盡可能修補了KRACK的漏洞，仍然無法避免握手封包的監聽攻擊，透過監聽指定WIFI的封包來取得握手封包，並使用密碼字典攻擊，習慣使用弱密碼的用戶無時無刻處於危險之中。  
+> 目前大部分的WIFI加密主流仍然是WPA2-PSK，儘管過去兩年各大廠商已盡可能修補了KRACK的漏洞，仍然無法避免握手封包的監聽攻擊，透過監聽指定WIFI的封包來取得握手封包，並使用密碼字典攻擊，習慣使用弱密碼的用戶無時無刻處於危險之中。   
+> 最直接也最有效的解決辦法是使用WISP設備進行WIFI管理，除了KRACK的相關漏洞，也能防範aircrack及假熱點的攻擊
 
-> 最直接也最有效的解決辦法是使用WISP設備進行WIFI管理，除了KRACK的相關漏洞，也能防範aircrack及假熱點的攻擊。
+### 簡易模擬實作。
+> 透過以下指令來開啟網卡的監聽模式
+![](https://i.imgur.com/AAPE6iZ.png)
+> 監聽WIFI廣播，即使隱藏SSID也能找得到
+![](https://i.imgur.com/b2gXPED.png)
+> 透過Wireshark監聽封包
+![](https://i.imgur.com/Da7LzQZ.png)
+
+## KRACK Attack
+> 透過[KRACK Attack](https://github.com/vanhoefm/krackattacks-scripts)可以針對WIFI的KRACK弱點進行檢測，如重播廣播幀、安裝重播計數器、重新安裝密鑰等。由於手邊裝置都有持續更新，大部分漏洞都已被修補過，幾乎檢測不到了。
 
 ## Contribution
 [clickme](https://hackmd.io/EkD3WmKyQgexSx-1F85Mkg)
