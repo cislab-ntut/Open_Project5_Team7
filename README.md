@@ -44,7 +44,7 @@ KRACK 並非直接解開 WPA2 加密強制通訊，而是透過基地臺重送�
 
 [Mathy Vanhoef 驗證 KRACK 過程](https://www.youtube.com/watch?v=Oh4WURZoR98)
 
-## HTS模擬題目
+## 模擬題目
 
 ## Contribution
 [clickme](https://hackmd.io/EkD3WmKyQgexSx-1F85Mkg)
